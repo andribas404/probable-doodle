@@ -18,7 +18,7 @@ async def as_completed(aws: typing.Iterable, capacity=DEFAULT_CAPACITY) -> Async
         yield item
 
 
-class Waiter(AsyncGenerator):
+class Waiter:
     """Waiter."""
 
     def __init__(self, items: typing.Iterable, *, capacity=DEFAULT_CAPACITY):
@@ -26,7 +26,6 @@ class Waiter(AsyncGenerator):
         self.items = items
         self.counter = asyncio.Queue(maxsize=capacity)
         self.queue_out = asyncio.Queue()
-        self._running_tasks = 0
 
     def __aiter__(self):
         """Async iter method."""
@@ -38,21 +37,9 @@ class Waiter(AsyncGenerator):
 
     async def __anext__(self):
         """Async next method."""
-        try:
-            item = await self.queue_out.get()
-            self.queue_out.task_done()
-            return item
-        except StopAsyncIteration:
-            raise
-
-    def asend(self, value):
-        pass
-
-    def athrow(self, typ: Any, val: Any = None, tb: Any = None):
-        pass
-
-    def aclose(self):
-        pass
+        item = await self.queue_out.get()
+        self.queue_out.task_done()
+        return item
 
     @staticmethod
     def stop_consuming(consume_task: asyncio.Task, task_done):
