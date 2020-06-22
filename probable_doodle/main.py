@@ -26,6 +26,7 @@ class Waiter(AsyncGenerator):
         self.agen = agen
         self.counter = asyncio.Queue(maxsize=capacity)
         self.queue_out = asyncio.Queue()
+        self.tasks = dict()
 
     def __aiter__(self):
         """Async iter method."""
@@ -57,12 +58,22 @@ class Waiter(AsyncGenerator):
         await self.queue_out.join()
 
     def launch_task(self, aw: typing.Awaitable):
-        task = asyncio.create_task(aw)
+        task: asyncio.Task = asyncio.create_task(aw)
         task.add_done_callback(self.done_task)
+        self.register_task(task)
+
+    def register_task(self, task: asyncio.Task):
+        task_name = task.get_name()
+        self.tasks[task_name] = task
+
+    def unregister_task(self, task: asyncio.Task):
+        task_name = task.get_name()
+        self.tasks.pop(task_name)
 
     def done_task(self, task_done):
         self.counter.get_nowait()
         self.queue_out.put_nowait(task_done)
+        self.unregister_task(task_done)
         self.counter.task_done()
 
     def asend(self, value) -> typing.Awaitable:
