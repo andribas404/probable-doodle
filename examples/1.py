@@ -5,14 +5,16 @@ import asyncio
 from probable_doodle import as_completed
 
 
-async def test_func(url):
+async def test_echo(msg):
     await asyncio.sleep(1)
-    return url + url
+    return msg
 
+async def test_agen():
+    for item in map(test_echo, "ab"*3):
+        yield item
 
 async def main():
-    aws = map(test_func, "ab"*3)
-    async for item in as_completed(aws, capacity=2):
+    async for item in as_completed(test_agen(), capacity=2):
         print(item)
 
 asyncio.run(main())

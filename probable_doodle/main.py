@@ -9,21 +9,21 @@ from typing import Any
 DEFAULT_CAPACITY = 32
 
 
-async def as_completed(aws: typing.Iterable, capacity=DEFAULT_CAPACITY) -> AsyncGenerator:
+async def as_completed(agen: typing.AsyncGenerator, capacity=DEFAULT_CAPACITY) -> typing.AsyncGenerator:
     """Coroutine as_completed.
 
     Receive completed tasks as they are done.
     """
-    async for item in Waiter(aws, capacity=capacity):
+    async for item in Waiter(agen, capacity=capacity):
         yield item
 
 
-class Waiter:
+class Waiter(AsyncGenerator):
     """Waiter."""
 
-    def __init__(self, items: typing.Iterable, *, capacity=DEFAULT_CAPACITY):
+    def __init__(self, agen: typing.AsyncGenerator, *, capacity=DEFAULT_CAPACITY):
         """Init Waiter."""
-        self.items = items
+        self.agen = agen
         self.counter = asyncio.Queue(maxsize=capacity)
         self.queue_out = asyncio.Queue()
 
@@ -50,9 +50,9 @@ class Waiter:
 
     async def produce(self):
         """Produce method."""
-        for aw in self.items:
+        async for item in self.agen:
             await self.counter.put(0)
-            self.launch_task(aw)
+            self.launch_task(item)
         await self.counter.join()
         await self.queue_out.join()
 
@@ -64,3 +64,13 @@ class Waiter:
         self.counter.get_nowait()
         self.queue_out.put_nowait(task_done)
         self.counter.task_done()
+
+    def asend(self, value) -> typing.Awaitable:
+        """Asend method."""
+
+    def athrow(self, typ: typing.Type[BaseException], val: typing.Optional[BaseException] = ...,
+               tb: Any = ...) -> typing.Awaitable:
+        """Athrow method."""
+
+    def aclose(self) -> typing.Awaitable:
+        """Aclose method."""
